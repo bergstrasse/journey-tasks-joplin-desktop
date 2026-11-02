@@ -1,0 +1,475 @@
+/* Host sizing must include both Joplin-injected wrappers. */
+:root{
+  /* Native controls follow the host palette, independent of OS appearance. */
+  color-scheme:only light;
+  --bg:var(--joplin-background-color,#fff);
+  --fg:var(--joplin-color,#32373f);
+  --muted:var(--joplin-color-faded,color-mix(in srgb,var(--fg) 65%,var(--bg)));
+  --card:color-mix(in srgb,var(--fg) 5%,var(--bg));
+  --line:var(--joplin-divider-color,color-mix(in srgb,var(--fg) 12%,var(--bg)));
+  /* Typography shared by settings, forms, and picker controls. */
+  --font-section-title:14px;
+  --font-control:13px;
+  --font-label:12px;
+  --font-helper:12px;
+  --control-line-height:20px;
+  --control-height:36px;
+  --accent:var(--joplin-color4,#386da9);
+  --journey-blue:var(--accent);
+  --journey-cyan:var(--accent);
+  --journey-green:var(--joplin-color-correct,#357d38);
+  --journey-red:var(--joplin-color-error,#c9322b);
+  font-family:var(--joplin-font-family,system-ui,-apple-system,"PingFang SC",sans-serif);
+  font-size:var(--joplin-font-size,14px);
+}
+*{box-sizing:border-box}
+html,body,#joplin-plugin-content-root,#joplin-plugin-content{width:100%;max-width:100%;min-width:0;height:100%;min-height:0;overflow:hidden}
+#root{flex:1 1 0;height:100%;min-height:0;min-width:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:contain;scrollbar-gutter:stable}
+body{margin:0;background:var(--bg);color:var(--fg)}
+button,input,select,textarea{font:inherit;color:inherit}
+/* Shared actions: visible secondary borders, solid primary actions, no button shadows. */
+button,.button-link{cursor:pointer;background:var(--bg);border:1px solid color-mix(in srgb,var(--fg) 28%,var(--bg));border-radius:6px;min-height:var(--control-height);padding:7px 10px;font-size:var(--font-control);line-height:var(--control-line-height);font-weight:500;box-shadow:none}
+.button-link>svg{display:block;flex-shrink:0}
+.button-link{display:inline-flex;align-items:center;justify-content:center;gap:6px;color:var(--fg);text-decoration:none;font-size:var(--font-control);line-height:var(--control-line-height)}
+button:not(:disabled):hover,.button-link:hover{background:color-mix(in srgb,var(--accent) 8%,var(--bg));border-color:var(--accent)}
+button:hover{border-color:var(--journey-cyan)}
+button:disabled{opacity:.5;cursor:not-allowed}
+:is(button,a,input,select,textarea,summary):focus{outline:none}
+:is(button,a,input,select,textarea,summary,[role=listbox]):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+input,select,textarea{background:var(--card);border:0;border-radius:6px;padding:8px;max-width:100%;min-width:0}
+input:not([type=checkbox]),select,textarea{font-size:var(--font-control);line-height:var(--control-line-height);min-height:var(--control-height)}
+select option{background:var(--bg);color:var(--fg)}
+input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
+input[type=checkbox]{appearance:none;display:inline-grid;place-content:center;background:var(--bg);border:1px solid var(--muted);border-radius:4px;padding:0;accent-color:var(--journey-blue);width:18px;height:18px;flex-shrink:0;margin:0}
+input[type=checkbox]:checked{background:var(--accent);border-color:var(--accent)}
+input[type=checkbox]:disabled{background:var(--card);border-color:var(--muted);border-style:dashed;cursor:not-allowed}
+.check:has(input:disabled){color:var(--muted);cursor:not-allowed}
+.repeat-hint{margin:-7px 0 15px;color:var(--fg);font-size:12px;line-height:1.65}
+input[type=checkbox]:checked::before{content:"";width:10px;height:6px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:translateY(-1px) rotate(-45deg)}
+input[type=checkbox]:disabled:checked::before{border-color:var(--muted)}
+textarea{resize:vertical;line-height:1.6}
+h1,h2,h3{line-height:1.4}
+h2{font-size:16px}h3{font-size:14px}p{line-height:1.65}
+.section-title{margin:0;font-size:var(--font-section-title);font-weight:600;line-height:24px}
+.app{padding:14px 22px 24px;width:100%;min-width:0;margin:0 auto}
+
+/* Reference page header: modes | centred brand | refresh, settings, new. */
+.app-header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;margin-bottom:16px;min-height:44px}
+.mode-switch,.header-actions{display:flex;align-items:center;gap:6px}
+.header-actions{justify-content:flex-end}
+.mode-switch button,.header-actions>button:not(.primary){display:flex;align-items:center;justify-content:center;background:transparent;border:0;color:var(--journey-cyan);padding:5px;min-width:30px}
+.mode-switch svg{width:25px;height:25px}.header-actions svg{width:23px;height:23px}
+.mode-switch button{color:var(--muted)}
+.mode-switch .active{color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--bg))}
+.journey-brand{font-size:18px;font-weight:500;letter-spacing:.01em;color:var(--journey-green);margin:0;text-align:center;white-space:nowrap}
+.primary{background:var(--journey-green);border-color:var(--journey-green);color:#fff;font-weight:500}
+.primary:not(:disabled):hover{background:var(--journey-green);color:#fff;filter:brightness(1.06)}
+.new-task{display:flex;align-items:center;gap:5px;white-space:nowrap;padding:8px 10px;min-height:42px}
+.new-task svg{width:19px;height:19px}
+
+/* Both navigation bars preserve the drawing's single horizontal arrangement. */
+.smart-lists{display:flex;gap:3px;padding:7px 13px;background:var(--card);border:0;border-radius:11px;overflow-x:auto;scrollbar-width:thin;min-height:60px}
+.smart-lists button{display:flex;align-items:center;justify-content:center;gap:7px;flex:1;min-width:max-content;border:0;background:transparent;color:var(--fg);font-size:15px;font-weight:600;white-space:nowrap;padding:8px 10px}
+.smart-lists svg{width:21px;height:21px;flex-shrink:0}
+.smart-lists button.active{background:color-mix(in srgb,var(--accent) 15%,var(--bg));color:var(--accent);border-radius:7px}
+.calendar-toolbar{display:flex;align-items:center;gap:7px;background:var(--card);color:var(--fg);border:0;border-radius:11px;padding:8px 10px 8px 18px;overflow-x:auto;scrollbar-width:thin;min-height:60px}
+.datebar{display:flex;align-items:center;gap:11px;flex:1;min-width:max-content;margin:0}
+.date-label{display:flex;align-items:center;gap:9px;flex:1;white-space:nowrap}
+.date-label>svg{width:22px;height:22px;flex-shrink:0}
+.date-label strong{font-size:14px;font-weight:400;white-space:nowrap}
+.calendar-view-select{background:transparent;color:var(--fg);border:0;border-radius:7px;padding:9px 7px;min-height:44px;min-width:52px;flex-shrink:0}
+.calendar-view-select option{background:var(--bg);color:var(--fg)}
+.period-navigation{display:flex;align-items:center;border:0;border-radius:7px;flex-shrink:0;min-height:44px}
+.period-navigation button{background:transparent;color:var(--fg);border:0;padding:6px 10px;min-height:42px;white-space:nowrap;font-size:15px}
+.period-navigation button:first-child,.period-navigation button:last-child{font-size:24px;line-height:1;width:30px;padding:2px}
+.back-view{display:flex;align-items:center;justify-content:center;align-self:center;flex-shrink:0;background:none;color:var(--fg);border:0;padding:0;width:32px;height:44px;min-width:32px}
+.back-view svg{display:block}
+.view-options{display:flex;flex-wrap:wrap;align-items:center;gap:24px;min-height:42px;margin:6px 8px 12px;font-size:14px}
+.view-options label{display:flex;align-items:center;gap:8px;white-space:nowrap}
+.options-label{display:inline-flex;align-items:center;gap:7px;font-weight:600}
+.calendar-summary{display:flex;align-items:center;justify-content:flex-end;gap:0;min-height:34px;margin-inline-start:auto;font-size:inherit;white-space:nowrap}
+.calendar-summary>svg{margin-inline-end:7px;flex-shrink:0}
+.calendar-summary .task-total{white-space:nowrap}
+.calendar-summary small{font-size:11px;color:var(--muted)}
+
+/* Preserve the reference's columns; narrow panels scroll this surface locally. */
+.view-surface{max-width:100%;min-width:0;overflow-x:auto;scrollbar-width:thin;padding-bottom:5px}
+.list-surface{min-width:620px}
+.day-group{margin:0 0 24px}
+.day-group>summary{display:flex;align-items:center;gap:9px;list-style:none;cursor:pointer;min-height:35px;margin:0 0 4px;font-size:16px;font-weight:600}
+.day-group>summary::-webkit-details-marker{display:none}
+.group-toggle{display:flex;align-items:center;justify-content:center;flex:0 0 22px;width:22px;height:24px}
+.group-toggle svg{display:block;flex-shrink:0}
+.day-group[open]>summary .group-toggle svg{transform:rotate(90deg)}
+.group-heading{display:flex;align-items:center;gap:9px;white-space:nowrap}
+.group-heading svg{width:20px;height:20px;flex-shrink:0}
+.group-count{font-size:14px;font-weight:400;margin-inline-start:3px}
+.task-list{border:0;background:transparent;border-radius:0}
+.task-row{display:grid;grid-template-columns:20px minmax(0,1fr) 105px 22px 115px;grid-template-areas:'check content notebook repeat date';align-items:center;gap:10px;padding:6px 20px 6px 31px;min-height:40px;position:relative;border:0}
+.list-surface .task-row::after{content:"";position:absolute;left:61px;right:20px;bottom:0;height:1px;background:var(--line);pointer-events:none}
+.task-row>input,.task-row>.preview-dot{grid-area:check}
+.task-row:hover{background:color-mix(in srgb,var(--fg) 3%,transparent)}
+.task-content{grid-area:content;text-align:start;min-width:0;min-height:26px;border:0;background:transparent;padding:0;color:var(--fg);line-height:1.5}
+.task-heading{display:flex;align-items:center;gap:7px;flex-wrap:nowrap;min-width:0}
+.task-title{display:block;font-size:15px;line-height:1.6;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.reminder-mark{display:inline-flex;flex-shrink:0;color:var(--muted)}
+.reminder-mark.active{color:var(--accent)}
+.reminder-mark.expired{opacity:.55}
+.task-tags{display:inline-flex;align-items:center;gap:3px;flex-shrink:0;max-width:55%;overflow:hidden}
+.task-tag{color:var(--fg);background:color-mix(in srgb,var(--fg) 9%,var(--bg));border:0;border-radius:4px;font-size:11px;line-height:1.4;padding:1px 6px;white-space:nowrap}
+.task-notebook{grid-area:notebook;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--fg)}
+.repeat-mark{grid-area:repeat;display:flex;justify-content:center;color:var(--muted)}
+.task-date{grid-area:date;white-space:nowrap;text-align:end;font-size:14px;color:var(--fg)}
+.overdue .task-date{color:var(--journey-red)}
+.task-meta{display:block;color:var(--muted);font-size:10px;line-height:1.4;margin-top:2px;white-space:normal}
+.preview-dot{color:var(--muted);font-size:23px;line-height:1}
+.more{position:absolute;right:0;top:7px;display:flex;align-items:center;justify-content:center;width:20px;padding:0;min-height:28px;border:0;background:none;font-size:18px;opacity:0}
+.task-row:hover .more,.more:focus-visible{opacity:1}
+
+/* Fixed civil-day scale; dense clusters scroll without stretching the day. */
+.day-timeline{min-width:620px;padding:10px 0 20px}
+.all-day-tasks{max-height:200px;overflow:auto;margin-bottom:20px}
+.timeline-entry{display:grid;grid-template-columns:62px 22px minmax(0,1fr);column-gap:14px;align-items:center;position:relative;height:40px;border-bottom:1px solid color-mix(in srgb,var(--fg) 7%,transparent);box-sizing:border-box;background:var(--bg)}
+.timeline-time{font-size:13px;white-space:nowrap;text-align:end;font-variant-numeric:tabular-nums}
+.timeline-node{display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.timeline-entry>.task-list{min-width:0}
+.timeline-entry .task-row{grid-template-columns:20px minmax(0,1fr) 100px 24px;grid-template-areas:'check content notebook repeat';padding:3px 20px 3px 5px;min-height:38px}
+.timed-day{position:relative;margin-top:12px}
+.timeline-hour{position:absolute;left:0;right:0;display:flex;align-items:center;gap:14px;pointer-events:none}
+.timeline-hour>time{width:62px;flex-shrink:0;text-align:end;transform:translateY(-50%);font-size:13px;line-height:20px;color:var(--muted);font-variant-numeric:tabular-nums}
+.timeline-hour::after{content:"";align-self:flex-start;flex:1;border-top:1px dashed color-mix(in srgb,var(--fg) 12%,transparent)}
+.timeline-cluster{position:relative;overflow-y:auto;scrollbar-width:thin;border-radius:4px;outline-offset:2px}
+.calendar-view-picker{position:relative;flex-shrink:0}
+.calendar-view-picker .calendar-view-select{display:flex;align-items:center;justify-content:center;gap:8px;padding:9px 10px;font-size:16px;font-weight:500;background:color-mix(in srgb,var(--fg) 4%,transparent)}
+.calendar-view-select>svg{display:block;flex-shrink:0}
+.calendar-view-menu{position:fixed;z-index:120;min-width:128px;padding:4px;background:var(--bg);border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 24px #0002}
+.calendar-view-menu button{display:flex;align-items:center;gap:9px;width:100%;min-height:42px;padding:8px;background:transparent;text-align:start}
+.calendar-view-menu button:hover,.calendar-view-menu button:focus-visible{background:var(--card)}
+.calendar-view-menu button[aria-checked=true]{color:var(--accent)}
+.view-check{margin-inline-start:auto}
+.timeline-gap>summary{display:flex;align-items:center;gap:8px;min-height:28px;cursor:pointer;color:var(--muted);font-size:11px;list-style:none;border-bottom:1px dashed color-mix(in srgb,var(--fg) 12%,transparent)}
+.timeline-gap>summary::-webkit-details-marker{display:none}
+.timeline-gap[open]>summary>svg{transform:rotate(90deg)}
+.timeline-gap-space{position:relative}
+.month-calendar .weekdays{text-align:start}
+.month-calendar .calendar-day{justify-content:flex-start;text-align:start;padding-inline-start:0}
+.preview-dot{display:flex;align-items:center;justify-content:center;width:18px;height:18px}
+.mini-tasks .preview-dot{width:16px;height:16px;margin-top:4px}
+.mini-tasks .preview-dot svg{width:16px;height:16px}
+
+/* Week and month retain seven days even inside narrow plugin panels. */
+.week-scroll{max-width:100%;overflow:visible}
+.week-board{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;min-width:640px}
+.week-column{min-width:0;min-height:240px;border:0;padding:0}
+.week-date{display:flex;flex-direction:column;align-items:flex-start;text-align:start;gap:16px;width:100%;border:0;background:none;padding:0 0 13px;min-height:70px;font-size:15px}
+.week-date strong{font-size:16px;font-weight:400}
+.week-column.is-today .week-date strong{color:var(--journey-cyan)}
+.mini-tasks .task-row{grid-template-columns:16px minmax(0,1fr);grid-template-areas:'check content';gap:6px;align-items:start;padding:4px 13px 4px 0;min-height:34px}
+.mini-tasks .task-row input{width:16px;height:16px;margin-top:4px}
+.mini-tasks .task-title{font-size:13px;white-space:nowrap;line-height:1.6;overflow:hidden;text-overflow:ellipsis}
+.mini-tasks .task-heading{display:flex;flex-wrap:nowrap;gap:4px}
+.mini-tasks .reminder-mark{order:-1}
+.task-heading .repeat-mark{display:inline-flex;flex-shrink:0}
+.mini-tasks .task-heading .repeat-mark{order:-2}
+.mini-tasks .more{width:13px;min-height:24px;font-size:15px;top:5px}
+.mini-tasks .preview-dot{font-size:19px;line-height:1.3}
+.mini-tasks .task-meta{font-size:8px}
+.calendar{padding:0;border:0;background:transparent}
+/* Fill a tall panel, while busy weeks grow to show every task. */
+.app:has(>.view-surface>.month-calendar){min-height:100%;display:flex;flex-direction:column}
+.app:has(>.view-surface>.month-calendar)>*{flex-shrink:0}
+.app>.view-surface:has(>.month-calendar){flex:1 0 auto;display:flex;flex-direction:column}
+.month-calendar{min-width:640px;flex:1;display:flex;flex-direction:column}
+.month-calendar>.weekdays{flex-shrink:0}
+.month-calendar>.calendar-week{flex:1 0 auto}
+.weekdays,.calendar-week{display:grid;grid-template-columns:20px repeat(7,minmax(0,1fr));gap:8px}
+.weekdays{text-align:center;font-size:15px;line-height:1.5;padding:0 0 9px}
+.calendar-week{position:relative;isolation:isolate;border:0;align-items:stretch}
+.week-number{align-self:start;border:0;background:transparent;color:var(--muted);font-size:10px;padding:4px 0;min-width:0;min-height:34px}
+.calendar-cell{min-width:0;min-height:125px;padding:0}
+.calendar-cell.outside .calendar-day{color:var(--muted);opacity:.48}
+.calendar-cell.outside .task-list{opacity:.55}
+.calendar-day{display:flex;align-items:center;justify-content:center;width:100%;border:0;background:transparent;min-height:36px;padding:2px;position:relative;font-size:15px}
+.calendar-cell.is-today .day-number{color:var(--journey-cyan);font-weight:600}
+.compact .calendar-cell.selected .calendar-day{outline:1px solid color-mix(in srgb,var(--fg) 15%,transparent);outline-offset:-2px}
+.overflow-count{border:0;background:none;color:var(--journey-cyan);font-size:11px;min-height:28px;padding:3px 0}
+
+/* Reference year overview is always four columns by three rows. */
+.year-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px 14px;min-width:680px}
+.year-month{min-width:0}
+.month-title{font-weight:400;border:0;background:none;font-size:12px;min-height:26px;padding:2px 3px;margin-bottom:4px}
+.compact{min-width:0}
+.compact .weekdays,.compact .calendar-week{grid-template-columns:14px repeat(7,minmax(0,1fr));gap:2px}
+.compact .weekdays{font-size:8px;padding-bottom:3px;color:var(--muted)}
+.compact .calendar-cell{min-height:23px;margin:2px 0;border-radius:4px}
+.compact .calendar-day{min-height:23px;padding:0;font-size:9px;border-radius:1px}
+.compact .week-number{font-size:7px;min-height:23px;padding:3px 0}
+.compact .calendar-cell.has-tasks:not(.outside){background:color-mix(in srgb,var(--journey-cyan) 17%,var(--bg));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--journey-cyan) 30%,transparent)}
+.compact .calendar-cell.has-tasks.is-today .day-number{color:var(--journey-cyan)}
+.compact .calendar-cell.outside{color:var(--muted)}
+.compact .day-count{display:none}
+
+/* Keep date highlights close to their labels and week highlights continuous. */
+.week-date{width:max-content;max-width:100%}
+.month-calendar .calendar-day{width:max-content;max-width:100%}
+.week-date:hover,.week-date:focus-visible,.month-calendar .calendar-day:hover,.month-calendar .calendar-day:focus-visible{background:transparent}
+.week-date>strong,.month-calendar .day-number{border-radius:4px;box-shadow:0 0 0 3px transparent}
+.week-date>strong:hover,.week-date:focus-visible>strong,.month-calendar .calendar-day:hover .day-number,.month-calendar .calendar-day:focus-visible .day-number{background:color-mix(in srgb,var(--fg) 7%,transparent);box-shadow:0 0 0 3px color-mix(in srgb,var(--fg) 7%,transparent)}
+.compact .calendar-day:hover,.compact .calendar-day:focus-visible{background:color-mix(in srgb,var(--fg) 7%,transparent);border-radius:4px}
+.calendar-week:has(>.week-number:hover)::before,.calendar-week:has(>.week-number:focus-visible)::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:color-mix(in srgb,var(--fg) 7%,transparent);border-radius:4px}
+.week-number:hover,.week-number:focus-visible{color:var(--accent)}
+
+/* Forms, errors and managed-task controls are unchanged in capability. */
+.empty{text-align:center;padding:32px 12px;color:var(--muted)}
+.empty h2{color:var(--fg)}.empty p{font-size:12px}
+.empty-icon{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;color:var(--journey-green);font-size:25px}
+.muted{color:var(--muted);font-size:var(--font-helper);line-height:20px}
+.error,.warning{border-radius:7px;padding:10px 12px;margin:10px 0;font-size:12px;line-height:1.6;overflow-wrap:anywhere}
+.error{color:#da554e;background:#d8474010;border:1px solid #d847404a}
+.warning{background:#dca14214;border:1px solid #dca14240}
+.error button,.warning button{margin-inline-start:8px;font-size:11px;padding:3px 6px;min-height:28px}
+.card{padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--card)}
+.modal-backdrop{position:fixed;inset:0;background:#10203355;z-index:100;display:flex;justify-content:flex-end}
+.drawer{--drawer-padding:16px;background:var(--bg);color:var(--fg);padding:var(--drawer-padding);width:min(100%,560px);height:100%;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:contain;box-shadow:-4px 0 24px #0002}
+.drawer-header{display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg);z-index:1;padding:5px 0 12px}
+.drawer-header h2{margin:0;font-size:17px;font-weight:600;line-height:24px}
+.drawer-header>button{display:flex;align-items:center;justify-content:center;width:36px;height:36px;flex-shrink:0;padding:0}
+.drawer form>label,.settings label{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;font-size:var(--font-label);line-height:18px}
+.drawer .check,.settings label.check{flex-direction:row;align-items:center}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.form-grid label{display:flex;flex-direction:column;gap:8px;font-size:var(--font-label);line-height:18px;margin-bottom:0}
+.drawer input:not([type=checkbox]),.drawer select,.drawer textarea{width:100%}
+fieldset{border:1px solid var(--line);border-radius:8px;padding:12px;margin:15px 0}
+legend{font-size:12px;font-weight:600;padding:0 6px}
+.weekday-picker{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:10px 0}
+.weekday-options,.weekday-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.weekday-picker label{display:flex;align-items:center;font-size:var(--font-label);line-height:18px;gap:4px}
+.weekday-picker button{font-size:var(--font-control);min-height:32px;padding:5px 8px}
+.full{width:100%;margin-top:12px}
+.action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:20px 0}
+.action-grid button{font-size:var(--font-control);text-align:start;overflow-wrap:anywhere}
+.danger{color:var(--journey-red);border-color:var(--journey-red)}
+.danger:not(:disabled):hover{color:var(--journey-red);border-color:var(--journey-red);background:color-mix(in srgb,var(--journey-red) 8%,var(--bg))}
+.settings{margin:14px 0}.settings h2{margin-top:0}
+.cleanup-settings{margin-top:20px}
+.cleanup-plan ul{padding-inline-start:18px;font-size:12px;overflow-wrap:anywhere}
+.cleanup-plan small{color:var(--muted)}
+
+/* Shared right-click / visible-button menu. */
+/* The full-screen dismiss button must never inherit opaque button hover styles. */
+.menu-shade,.menu-shade:not(:disabled):hover,.menu-shade:focus,.menu-shade:active{background:transparent;border:0;box-shadow:none;outline:none}
+.menu-shade{position:fixed;inset:0;z-index:110;border-radius:0;padding:0}
+.task-menu{position:fixed;z-index:111;width:min(290px,calc(100vw - 16px));max-height:calc(100vh - 16px);overflow-y:auto;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px;box-shadow:0 12px 36px #0003}
+.menu-caption{font-size:12px;color:var(--muted);padding:3px 8px 9px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+.menu-date-options{padding:4px 7px 12px;border-bottom:1px solid var(--line);font-size:12px;color:var(--muted)}
+.menu-date-options>div{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}
+.menu-date-options button{font-size:10px;padding:4px 6px;min-height:30px}
+.task-menu [role=menu]{display:flex;flex-direction:column;gap:2px;padding-top:7px}
+.task-menu [role=menuitem]{display:flex;gap:11px;align-items:center;text-align:start;background:transparent;border:0;font-size:13px;min-height:38px;padding:8px}
+.task-menu [role=menuitem]:hover{background:color-mix(in srgb,var(--fg) 5%,transparent)}
+.menu-chevron{margin-inline-start:auto}
+.menu-picker{border-top:1px solid var(--line);padding:12px 6px 5px}
+.menu-picker label{display:flex;flex-direction:column;gap:6px;font-size:12px}
+.menu-picker input,.menu-picker select{width:100%}.menu-picker .primary{width:100%}
+
+/* Header controls compact at small widths; the drawn view geometry does not reflow. */
+@media(max-width:500px){
+  .app{padding:12px 10px 20px}
+  .app-header{gap:5px;grid-template-columns:1fr auto 1fr}
+  .mode-switch,.header-actions{gap:2px}
+  .journey-brand{font-size:14px}
+  .mode-switch button,.header-actions>button:not(.primary){padding:3px;min-width:26px}
+  .mode-switch svg,.header-actions svg{width:21px;height:21px}
+  .new-task{font-size:12px;padding:7px;gap:3px;min-height:38px}
+  .new-task svg{width:15px;height:15px}
+  .smart-lists{padding:6px;gap:2px;min-height:50px}
+  .smart-lists button{font-size:13px;padding:7px;gap:5px}
+  .smart-lists svg{width:17px;height:17px}
+  .calendar-toolbar{padding:7px 9px;min-height:54px}
+  .datebar{gap:7px}.date-label{gap:6px}.date-label strong{font-size:12px}
+  .calendar-view-select,.period-navigation{min-height:38px}
+  .calendar-view-select{padding:7px 5px;min-width:44px}
+  .period-navigation button{font-size:13px;padding:5px 8px;min-height:36px}
+  .view-options{gap:17px;margin:7px 4px 12px;font-size:13px}
+  .calendar-summary{font-size:inherit;gap:0}
+  .drawer{--drawer-padding:12px}.form-grid{gap:8px}
+}
+@media(pointer:coarse){
+  button{min-height:44px}
+  .more{opacity:1;min-height:34px}
+  .task-menu [role=menuitem],.menu-date-options button{min-height:44px}
+  .task-row{min-height:44px}
+  .mini-tasks .task-row{min-height:38px}
+  .mini-tasks .more{min-height:32px}
+}
+
+/* Quick creation stays beside its date selector even in narrow host panels. */
+.quick-add{position:relative;margin:14px 0 8px}
+.quick-add-bar{display:flex;align-items:center;gap:4px;min-height:48px;border:0;border-radius:10px;background:var(--card);padding:4px 7px}
+.quick-add-bar>input{flex:1;width:0;min-width:0;border:0;background:transparent;padding:8px 2px;outline:none}
+.quick-add-bar>button{display:flex;align-items:center;justify-content:center;gap:6px;border:0;background:transparent;padding:6px;flex-shrink:0}
+.quick-add-submit{color:var(--muted)}
+.quick-add-options{color:var(--journey-cyan);white-space:nowrap}
+.quick-add-popover{position:absolute;right:0;top:calc(100% + 6px);z-index:10;width:290px;max-width:100%;padding:16px;border:1px solid var(--line);border-radius:12px;background:var(--card);box-shadow:0 8px 24px #0003}
+.quick-add-popover label{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.quick-add-popover label:last-child{margin-bottom:0}
+.quick-add-popover select,.quick-add-popover input{width:100%}
+
+.quick-add-bar>.quick-add-options{flex-shrink:1;min-width:0;max-width:60%}
+.quick-add-options svg{flex-shrink:0}
+.quick-add-divider{height:18px;border-left:1px solid var(--line);margin:0 3px;flex-shrink:0}
+.quick-add-notebook{min-width:0;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.list-sort { position: relative; }
+.list-sort-menu { position: absolute; right: 0; top: calc(100% + 8px); width: 380px; max-width: calc(100vw - 32px); padding: 8px; border: 1px solid var(--line); border-radius: 16px; background: var(--card); box-shadow: 0 8px 30px #0003; z-index: 30; }
+.list-sort-menu > button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px; border: 0; background: transparent; text-align: start; }
+.list-sort-menu > button > svg,.list-sort-menu > button > span:not(.sort-value){flex-shrink:0;white-space:nowrap}
+.list-sort-menu .sort-value { margin-inline-start: auto; color: var(--muted); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.sort-choice-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sort-choices button > span:last-child{flex-shrink:0}
+.sort-choices { padding: 0 12px 6px 44px; }
+.sort-choices button { display: flex; justify-content: space-between; gap:8px; white-space:nowrap; width: 100%; padding: 8px; border: 0; background: transparent; }
+.sort-choices button[aria-pressed="true"] { color: var(--accent); }
+.list-sort-menu button:hover { background: var(--bg); }
+
+.list-sort > button { display:flex; align-items:center; justify-content:center; background:transparent; border:0; color:var(--journey-cyan); padding:5px; min-width:30px; }
+
+.view-options > .list-sort { margin-inline-start: auto; }
+
+.settings-page{font-size:var(--font-control);max-width:760px;margin:0 auto;padding:12px 0 28px}
+.settings-header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}
+.settings-header h1{margin:0;font-size:22px;font-weight:700;line-height:30px}
+.settings-page>.settings{margin:20px 0 0}
+.settings-page .settings label{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;font-size:var(--font-label);line-height:18px}
+.settings-page .settings select{width:100%}
+.settings-page .cleanup-settings{margin-top:20px}
+.cleanup-backdrop{align-items:center;justify-content:center;padding:16px}
+.cleanup-dialog{height:auto;width:min(100%,560px);max-height:calc(100dvh - 32px);border-radius:12px;overflow-y:auto}
+.cleanup-items{overflow-wrap:anywhere;padding-inline-start:20px}
+.cleanup-items small{display:block;color:var(--muted)}
+.cleanup-plan label{display:flex;flex-direction:column;gap:8px;margin:16px 0}
+.cleanup-plan .danger{margin-bottom:16px}
+.cleanup-overview{display:grid;gap:14px;margin:16px 0}
+.cleanup-overview p{margin:0;line-height:1.6}
+.cleanup-scope{display:grid;gap:12px;margin:0;padding:14px;border:1px solid var(--line);border-radius:8px}
+.cleanup-scope dt{font-weight:600;margin-bottom:4px}
+.cleanup-scope dd{margin:0;line-height:1.6;color:var(--muted)}
+.cleanup-details{font-size:13px;line-height:1.6;overflow-wrap:anywhere}
+.cleanup-details h3{margin:0;color:var(--muted)}
+.cleanup-details p{margin-top:10px}
+.cleanup-preview-dialog{width:min(100%,860px);min-height:min(560px,calc(100dvh - 32px))}
+.cleanup-plan{margin:16px 0}
+.cleanup-plan h3{margin:0}
+.cleanup-plan label input{width:100%;min-width:0}
+.cleanup-dialog .drawer-header h2{display:flex;align-items:center;gap:8px}
+.cleanup-dialog .drawer-header h2 svg{flex-shrink:0;color:var(--journey-red)}
+.cleanup-items li+li{margin-top:8px}
+
+/* Shared localized date/time fields and their themed picker trigger. */
+.date-time-input{position:relative;display:flex;align-items:center;min-width:0;width:100%}
+.date-time-input>input{width:100%;padding-inline-end:40px;min-height:36px}
+.date-time-input>input::-webkit-calendar-picker-indicator{display:none}
+.date-time-input>.date-time-trigger{position:absolute;right:2px;top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:36px;min-height:32px;padding:6px;background:transparent;border-color:transparent;color:var(--fg)}
+.date-time-trigger svg{display:block;flex-shrink:0;width:20px;height:20px}
+.quick-add-options>svg:last-child{width:20px;height:20px;display:block}
+.timeline-cluster.dense{border-right:3px solid color-mix(in srgb,var(--journey-cyan) 45%,transparent);overflow-y:scroll}
+
+.timeline-entry:hover{background:color-mix(in srgb,var(--fg) 4%,var(--bg))}
+.timeline-entry .task-row:hover,.timeline-entry .task-content:hover{background:transparent}
+.timeline-entry:hover .more{opacity:1}
+
+.task-row[data-selected] { background: var(--joplin-selected-color, rgba(70, 140, 220, .22)); box-shadow: inset 3px 0 #4285d4; }
+
+.timeline-entry[data-selected] { background: var(--joplin-selected-color, rgba(70, 140, 220, .22)); box-shadow: inset 3px 0 #4285d4; }
+.timeline-entry[data-selected] .task-row[data-selected] { background: transparent; box-shadow: none; }
+
+.menu-date-options>div{justify-content:space-between;flex-wrap:nowrap}
+.menu-date-options button{display:flex;align-items:center;justify-content:center;min-width:36px;min-height:36px;padding:6px}
+.menu-submenu{position:fixed;z-index:112;width:min(260px,calc(100vw - 16px));max-height:calc(100vh - 16px);overflow:auto;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px;box-shadow:0 12px 36px #0003}
+.menu-submenu form{display:flex;flex-direction:column;gap:10px}
+.menu-submenu label{display:flex;flex-direction:column;gap:6px;font-size:12px}
+.menu-submenu input,.menu-submenu .primary{width:100%}
+.menu-folder-list{max-height:300px;overflow-y:auto}
+.menu-folder-list button{flex-shrink:0;width:100%}
+.menu-folder-list button>span:not(.menu-chevron){overflow-wrap:anywhere;min-width:0}
+.menu-folder-list svg{flex-shrink:0}
+
+.task-abandoned { display: inline-flex; align-items: center; gap: 3px; font-size: 0.85em; color: var(--joplin-color); }
+
+.date-time-popover{font-size:var(--font-control);line-height:var(--control-line-height);position:fixed;z-index:1000;display:flex;flex-direction:column;gap:8px;width:min(280px,calc(100vw - 8px));max-height:calc(100vh - 8px);overflow:auto;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--fg);box-shadow:0 6px 24px #0003}
+.date-time-heading{display:grid;grid-template-columns:28px minmax(0,1fr) 76px 28px;align-items:center;gap:4px}
+.date-time-heading>.date-time-nav{display:flex;align-items:center;justify-content:center;padding:0;background:transparent;border-color:transparent}
+.date-time-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;text-align:center;font-size:var(--font-label)}
+.date-time-days button{font-size:var(--font-control);padding:6px 0;min-width:0;font-weight:400;background:transparent;border-color:transparent}
+.date-time-days button.outside{color:var(--muted)}
+.date-time-days button[aria-pressed=true]{border:2px solid var(--accent);color:var(--fg);padding:5px 0}
+.date-time-clock{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;align-items:end;gap:8px}
+.date-time-popover .date-time-clock label{display:flex;flex-direction:column;gap:8px;margin:0;font-size:var(--font-label);line-height:18px}
+.date-time-clock select,.date-time-clock>button{height:36px;margin:0;padding:6px 8px}
+.date-time-popover>button{margin:0}
+.date-time-clock label{min-width:0;flex:1}
+.picker-select{position:relative;display:flex;align-items:center;min-width:0;width:100%}
+.date-time-popover .picker-select>select{appearance:none;width:100%;min-width:0;height:36px;padding:6px 26px 6px 8px;border:1px solid color-mix(in srgb,var(--fg) 28%,var(--bg));background:var(--bg)}
+.picker-select>svg{position:absolute;inset-inline-end:7px;pointer-events:none;flex-shrink:0}
+.year-select{position:relative;display:inline-flex;min-width:0}
+.year-select>button{display:flex;align-items:center;justify-content:space-between;gap:4px;width:100%;padding:6px 7px}
+.year-select>button>svg{flex-shrink:0}
+.year-options{position:absolute;top:100%;inset-inline-end:0;z-index:1;display:block;width:90px;height:160px;overflow-y:auto;overscroll-behavior:contain;background:var(--bg);border:1px solid var(--line);border-radius:6px;box-shadow:0 4px 12px #0003}
+.year-options-track{position:relative;display:block}
+.year-options-track>button{position:absolute;inset-inline:0;width:100%;height:32px;min-height:32px;padding:4px;border:0;border-radius:0;font-weight:400}
+.year-options-track>button.active{background:var(--line)}
+.year-options-track>button[aria-selected=true]{background:var(--accent);color:white}
+
+/* Directional popovers follow the interface; fixed coordinates remain viewport based. */
+[dir=rtl] .quick-add-popover,[dir=rtl] .list-sort-menu{right:auto;left:0}
+[dir=rtl] .more{right:auto;left:0}
+[dir=rtl] .date-time-input>.date-time-trigger{right:auto;left:2px}
+[dir=rtl] .list-surface .task-row::after{left:20px;right:61px}
+[dir=rtl] .menu-chevron{transform:scaleX(-1)}
+.date-time-input>input{direction:ltr;text-align:start}
+
+.settings-about{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.settings-about>div{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.settings-about .muted{font-size:var(--font-helper);line-height:20px}
+.settings-about .button-link{flex-shrink:0}
+.settings-support{margin-top:20px}
+.settings-support-content{text-align:center;padding:20px 0 8px}
+.settings-support-content p{font-size:var(--font-helper);line-height:20px;margin:8px 0 16px}
+.settings-support-qr{width:180px;max-width:100%;aspect-ratio:1;margin:0 auto;padding:12px;background:white url('../../pictures/bmc_qr.png') center/contain no-repeat;background-origin:content-box;border-radius:8px}
+
+.history-timeline{list-style:none;padding:0;margin:16px 0}
+.history-timeline li{border-bottom:1px solid var(--line);padding:12px 0;overflow-wrap:anywhere}
+.history-event{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:13px}
+.history-event time,.history-time{color:var(--muted);font-size:11px}
+.history-detail{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:6px}
+.history-actions{display:flex;gap:6px}
+.history-actions button{font-size:11px}
+.history-change{font-size:12px;margin-top:8px;line-height:1.6}
+.history-change>span{color:var(--muted)}
+
+.notebook-filter{position:relative;flex:0 0 144px;width:144px;max-width:100%;min-width:0}
+.notebook-filter > button{display:block;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.notebook-filter-menu{position:absolute;inset-inline-start:0;top:calc(100% + 8px);width:320px;max-width:calc(100vw - 32px);max-height:360px;overflow:auto;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--card);box-shadow:0 8px 30px #0003;z-index:30}
+.notebook-filter-menu p{margin:0 0 8px;color:var(--muted);font-size:12px}
+.notebook-filter-menu label{padding:6px 0;white-space:normal;overflow-wrap:anywhere}
+.filter-actions{display:flex;gap:8px;margin-bottom:8px}
+.task-search{position:relative;flex:0 0 220px;width:220px;max-width:100%;min-width:0}
+.task-search input{display:block;width:100%;min-width:0;padding-inline-end:36px}
+.task-search input::-webkit-search-cancel-button{appearance:none}
+.task-search button{position:absolute;inset-inline-end:2px;top:50%;transform:translateY(-50%);padding:4px 8px;min-height:30px;border:0;background:transparent}
+.filter-empty{text-align:center;padding:20px;color:var(--muted)}
+
+.notebook-picker{position:relative;display:flex;flex-direction:column;gap:6px;margin-block:8px}
+.notebook-picker-label{font-size:13px;color:var(--muted)}
+.notebook-picker-trigger{display:flex;align-items:center;gap:8px;width:100%;min-height:38px;text-align:start}
+.notebook-picker-trigger>span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.notebook-picker-menu{position:relative;max-height:280px;overflow:auto;padding:4px;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+.notebook-tree{display:flex;flex-direction:column;gap:2px}
+.notebook-tree-row{display:flex;align-items:center;gap:2px;min-width:0}
+.notebook-tree .notebook-toggle,.notebook-toggle-spacer{flex:0 0 24px;width:24px;min-width:24px;height:30px}
+.notebook-tree .notebook-toggle{display:flex;align-items:center;justify-content:center;padding:0;border:0;background:transparent}
+.notebook-tree .notebook-choice{display:flex;align-items:center;gap:8px;flex:1;width:auto;min-width:0;padding:6px 8px;border:0;text-align:start;background:transparent}
+.notebook-choice>span{flex:1;min-width:0;overflow-wrap:anywhere}
+.notebook-choice svg{flex-shrink:0}
+.notebook-tree .notebook-choice[aria-pressed="true"]{background:color-mix(in srgb,var(--accent) 12%,var(--bg));font-weight:600}
+.notebook-group-children{margin-inline-start:16px}

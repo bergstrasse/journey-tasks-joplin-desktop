@@ -1,0 +1,2 @@
+# package.json files defines the public package contents.
+# Do not inherit .gitignore: publish/ must be included in npm packages.

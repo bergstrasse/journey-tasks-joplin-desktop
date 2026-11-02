@@ -1,0 +1,38 @@
+const paths = {
+  check: 'm5 12 4 4L19 6',
+  projected: '',
+  feedback: 'M21 11a8 8 0 0 1-8 8H7l-5 3V11a8 8 0 0 1 8-8h3a8 8 0 0 1 8 8ZM12 7v5M12 15h.01',
+  coffee: 'M4 8h13v7a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V8ZM17 8h2a3 3 0 0 1 0 6h-2M3 22h16M7 2v3M11 2v3M15 2v3',
+  warning: 'M12 3 2 21h20L12 3zM12 9v5M12 17h.01',
+  bell: 'M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4',
+  statistics: 'M4 3v18h17M8 17v-5M13 17V8M18 17V4',
+  week: 'M4 5h16v16H4zM4 9h16M8 3v4M16 3v4M9 9v12M15 9v12',
+  year: 'M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z',
+  sort: 'M8 3v18m-4-4 4 4 4-4M16 21V3m-4 4 4-4 4 4',
+  list: 'M8 6h12M8 12h12M8 18h12M3 6h1M3 12h1M3 18h1',
+  openNote: 'M14 3h7v7M21 3 10 14M10 3H3v18h18v-7',
+  calendar: 'M4 5h16v16H4zM4 9h16M8 3v4M16 3v4M8 13h1M12 13h1M16 13h1M8 17h1M12 17h1',
+  today: 'M4 5h16v16H4zM4 9h16M8 3v4M16 3v4M10 13h4v4h-4z',
+  tomorrow: 'M4 5h16v16H4zM4 9h16M8 3v4M16 3v4M8 15h8m-3-3 3 3-3 3',
+  sevenDays: 'M4 5h16v16H4zM4 9h16M8 3v4M16 3v4M9 12h6l-4 6',
+  options: 'M4 7h9m4 0h3M4 17h3m4 0h9M13 4v6M7 14v6',
+  refresh: 'M20 8a8 8 0 1 0 0 8M20 4v4h-4',
+  settings: 'm9 3-1 3-3 1-2 3 2 3v4l3 1 2 3 3-2h4l1-3 3-2-2-3V7l-3-1-2-3zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6',
+  plus: 'M12 5v14M5 12h14',
+  pin: 'm8 3 8 0-1 7 4 5H5l4-5zM12 15v6',
+  unpin: 'm8 3 8 0-1 7 4 5H5l4-5M12 15v6M3 3l18 18',
+  clearDate: 'M4 5h16v16H4zM4 9h16M8 3v4M16 3v4M9 13l6 5M15 13l-6 5',
+  repeat: 'M20 10a8 8 0 0 0-13.66-3.66L4 8M4 4v4h4M4 14a8 8 0 0 0 13.66 3.66L20 16M16 16h4v4',
+  clock: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M12 7v5l3 2',
+  inbox: 'M6 4h12l4 12v5H2v-5zM2 16h6l2 3h4l2-3h6',
+  folder: 'M3 7V4h6l3 3h9v13H3z',
+  abandon: 'M5 3h14l2 2v14l-2 2H5l-2-2V5zM8 8l8 8M16 8l-8 8',
+  trash: 'M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7',
+  back: 'm14 5-7 7 7 7',
+  chevronDown: 'm5 9 7 7 7-7',
+  chevronRight: 'm9 5 7 7-7 7',
+} as const;
+export type IconName = keyof typeof paths;
+export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><>{name === 'projected' ? <rect x="1" y="1" width="22" height="22" rx="5" strokeDasharray="3 3" /> : <path d={paths[name]} />}</></svg>;
+}
