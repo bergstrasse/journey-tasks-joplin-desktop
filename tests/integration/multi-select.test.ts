@@ -34,6 +34,49 @@ for (const platform of ['MacIntel', 'Win32', 'Linux x86_64']) test(`multi-select
       await act(async () => { renderer = create(React.createElement(App)); });
       const rows = () => renderer!.root.findAllByType('article');
       assert.equal(rows().length, 3, view);
+      const shiftClick = async (index: number, order = rows(), hiddenId?: string) => {
+        const surface = { querySelectorAll: () => order.map(row => ({
+          dataset: { selectionId: row.props['data-selection-id'] },
+          closest: () => row.props['data-selection-id'] === hiddenId ? {} : null,
+        })) };
+        await act(async () => rows()[index]!.props.onClickCapture({ shiftKey: true,
+          currentTarget: { closest: () => surface }, preventDefault: noop, stopPropagation: noop }));
+      };
+      const clear = async () => act(async () => clickOutside!({ target: { closest: () => null } }));
+      await shiftClick(0);
+      assert.equal(rows().filter(row => row.props['data-selected']).length, 1, 'first Shift click selects the anchor');
+      await shiftClick(2);
+      assert.equal(rows().filter(row => row.props['data-selected']).length, 3, 'Shift selects both endpoints and intermediate tasks');
+      await shiftClick(1);
+      assert.deepEqual(rows().map(row => !!row.props['data-selected']), [true, true, false], 'moving endpoint inward shrinks the range');
+      await shiftClick(0);
+      assert.deepEqual(rows().map(row => !!row.props['data-selected']), [true, false, false], 'clicking the anchor leaves only the anchor selected');
+      await shiftClick(2);
+      assert.equal(rows().filter(row => row.props['data-selected']).length, 3, 'the original anchor survives shrinking and expanding');
+      let prevented = false;
+      rows()[2]!.props.onMouseDownCapture({ shiftKey: true, preventDefault: () => { prevented = true; } });
+      assert.equal(prevented, true, 'Shift mousedown prevents native text highlighting before click');
+      prevented = false;
+      rows()[2]!.props.onMouseDownCapture({ shiftKey: false, preventDefault: () => { prevented = true; } });
+      assert.equal(prevented, false, 'ordinary clicks retain native focus behavior');
+
+      await clear();
+      await shiftClick(2);
+      await shiftClick(0);
+      assert.equal(rows().filter(row => row.props['data-selected']).length, 3, 'reverse ranges work after clearing the old anchor');
+      await shiftClick(1);
+      assert.deepEqual(rows().map(row => !!row.props['data-selected']), [false, true, true], 'reverse ranges shrink toward their original anchor');
+
+      await clear();
+      await act(async () => rows()[0]!.props.onClickCapture({ metaKey: platform === 'MacIntel', ctrlKey: platform !== 'MacIntel', preventDefault: noop, stopPropagation: noop }));
+      await shiftClick(1, [rows()[0]!, rows()[2]!, rows()[1]!]);
+      assert.equal(rows().filter(row => row.props['data-selected']).length, 3, 'range uses displayed order and accepts a Cmd/Ctrl anchor');
+      await clear();
+      await shiftClick(0);
+      await shiftClick(2, rows(), rows()[1]!.props['data-selection-id']);
+      assert.equal(rows().filter(row => row.props['data-selected']).length, 2, 'collapsed rows are excluded');
+      await clear();
+
       for (const index of [0, 1, 0, 0]) await act(async () => rows()[index]!.props.onClickCapture({ metaKey: platform === 'MacIntel', ctrlKey: platform !== 'MacIntel', preventDefault: noop, stopPropagation: noop }));
       assert.equal(rows().filter(row => row.props['data-selected']).length, 2);
       if (view === 'day') {

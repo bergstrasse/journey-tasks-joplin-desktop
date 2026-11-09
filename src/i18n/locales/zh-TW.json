@@ -221,7 +221,7 @@
   "backend.NOTEBOOK_MISSING": "請選擇有效的目標筆記本。",
   "backend.REPEAT_DATE_REQUIRED": "重複任務必須有計劃日期。",
   "backend.ALREADY_REPEATING": "此筆記已有重複系列。",
-  "backend.REPEAT_DATE_REQUIRED.detail2": "請先為未完成任務設定計劃日期。",
+  "backend.REPEAT_DATE_REQUIRED.detail2": "重複任務必須有計劃日期。",
   "backend.SERIES_MISSING.detail2": "系列定義不可用。",
   "backend.TEMPLATE_REQUIRED": "週期歸檔模式必須先設定系列模板。",
   "backend.TEMPLATE_MISSING.detail2": "下一週期模板尚未同步，已保留本次完成狀態。",

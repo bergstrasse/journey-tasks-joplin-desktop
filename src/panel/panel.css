@@ -392,10 +392,12 @@ legend{font-size:12px;font-weight:600;padding:0 6px}
 .timeline-entry .task-row:hover,.timeline-entry .task-content:hover{background:transparent}
 .timeline-entry:hover .more{opacity:1}
 
-.task-row[data-selected] { background: var(--joplin-selected-color, rgba(70, 140, 220, .22)); box-shadow: inset 3px 0 #4285d4; }
+.task-row[data-selected] { user-select: none; -webkit-user-select: none; background: var(--joplin-selected-color, rgba(70, 140, 220, .22)); box-shadow: inset 3px 0 #4285d4; }
+
+.task-row[data-selected] .task-content { background: transparent; }
 
 .timeline-entry[data-selected] { background: var(--joplin-selected-color, rgba(70, 140, 220, .22)); box-shadow: inset 3px 0 #4285d4; }
-.timeline-entry[data-selected] .task-row[data-selected] { background: transparent; box-shadow: none; }
+.timeline-entry[data-selected] .task-row[data-selected] { user-select: none; -webkit-user-select: none; background: transparent; box-shadow: none; }
 
 .menu-date-options>div{justify-content:space-between;flex-wrap:nowrap}
 .menu-date-options button{display:flex;align-items:center;justify-content:center;min-width:36px;min-height:36px;padding:6px}
@@ -416,6 +418,7 @@ legend{font-size:12px;font-weight:600;padding:0 6px}
 .date-time-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;text-align:center;font-size:var(--font-label)}
 .date-time-days button{font-size:var(--font-control);padding:6px 0;min-width:0;font-weight:400;background:transparent;border-color:transparent}
 .date-time-days button.outside{color:var(--muted)}
+.date-time-days button[aria-current=date]{background:color-mix(in srgb,var(--accent) 18%,var(--bg));color:var(--fg);font-weight:700}
 .date-time-days button[aria-pressed=true]{border:2px solid var(--accent);color:var(--fg);padding:5px 0}
 .date-time-clock{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;align-items:end;gap:8px}
 .date-time-popover .date-time-clock label{display:flex;flex-direction:column;gap:8px;margin:0;font-size:var(--font-label);line-height:18px}

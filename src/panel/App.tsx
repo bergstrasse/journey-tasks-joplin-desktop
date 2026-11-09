@@ -57,6 +57,11 @@ function useTaskEvent<T extends (...args: any[]) => any>(handler: T): T {
 function reuseEqual<T>(previous: T | undefined, next: T): T {
   return previous !== undefined && JSON.stringify(previous) === JSON.stringify(next) ? previous : next;
 }
+/** Row fields shown before the save returns; the next snapshot replaces them either way. */
+function optimisticPatch(input: Extract<CommandInput, { action: 'setFields' | 'moveTask' }>): { pinned?: boolean; priority?: Task['priority']; notebookId?: string } {
+  if (input.action === 'moveTask') return { notebookId: input.notebookId };
+  return { ...(input.pinned !== undefined ? { pinned: input.pinned } : {}), ...(input.priority !== undefined ? { priority: input.priority } : {}) };
+}
 export function App() {
   const [collapsed, setCollapsed] = useState(false);
   const collapseButton = useRef<HTMLButtonElement>(null);
@@ -83,7 +88,7 @@ export function App() {
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
   const pendingCommands = useRef(new Set<string>());
   const commandQueue = useRef<Promise<unknown>>(Promise.resolve());
-  const optimisticFields = useRef(new Map<string, { pinned?: boolean; priority?: Task['priority']; completedAt?: number; completed?: boolean }>());
+  const optimisticFields = useRef(new Map<string, { pinned?: boolean; priority?: Task['priority']; completedAt?: number; completed?: boolean; notebookId?: string }>());
   const dataRef = useRef(data);
   const renderedSnapshot = useRef<ApplicationSnapshot | undefined>(undefined);
   const applyOptimistic = (snapshot: ApplicationSnapshot): ApplicationSnapshot => {
@@ -108,6 +113,8 @@ export function App() {
   const [settings, setSettings] = useState(false);
   const [menu, setMenu] = useState<{task: Task; tasks: Task[]; x: number; y: number}>();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const selectionAnchor = useRef<string | undefined>(undefined);
+  useEffect(() => { if (!selectedIds.size) selectionAnchor.current = undefined; }, [selectedIds]);
   const closeMenu = useCallback(() => { setMenu(undefined); setSelectedIds(previous => previous.size ? new Set() : previous); }, []);
   useEffect(() => { setSelectedIds(previous => previous.size ? new Set() : previous); setMenu(undefined); }, [query, settings]);
   useEffect(() => {
@@ -227,8 +234,8 @@ export function App() {
       optimisticFields.current.set(input.noteId, { completed, completedAt: completed ? Date.now() : 0 });
       setData(previous => previous && applyOptimistic(previous));
     }
-    if (input.action === 'setFields') {
-      optimisticFields.current.set(input.noteId, { ...(input.pinned !== undefined ? { pinned: input.pinned } : {}), ...(input.priority !== undefined ? { priority: input.priority } : {}) });
+    if (input.action === 'setFields' || input.action === 'moveTask') {
+      optimisticFields.current.set(input.noteId, optimisticPatch(input));
       setData(previous => previous && applyOptimistic(previous));
     }
     const execute = async () => {
@@ -263,11 +270,22 @@ export function App() {
     if ([...keys].some(key => pendingCommands.current.has(key))) return;
     for (const key of keys) pendingCommands.current.add(key);
     setPendingIds(new Set(pendingCommands.current));
+    const optimistic = inputs.flatMap(input => input.action === 'setFields' || input.action === 'moveTask' ? [input] : []);
+    if (optimistic.length) {
+      for (const input of optimistic) optimisticFields.current.set(input.noteId, optimisticPatch(input));
+      setData(previous => previous && applyOptimistic(previous));
+    }
     const execute = async () => {
       setBusy(true); setErrorCode(undefined); setError('');
       let succeeded = 0;
       try {
         let snapshot = await querySnapshot(queryRef.current);
+        let version = snapshot.snapshotVersion;
+        // A full snapshot per item dominated large batches (#91). Only selections that share a
+        // series need one: a later command's conflict retry must compare against what the
+        // earlier command left behind. Other items chain the version each save returns.
+        const seriesIds = inputs.map(input => 'noteId' in input && input.noteId ? snapshot.tasks.find(task => task.noteId === input.noteId)?.seriesId : undefined).filter(Boolean);
+        const resnapshot = new Set(seriesIds).size !== seriesIds.length;
         let result;
         // Delete the anchor last so remaining selections can still write their history.
         // Shared-carrier history must also be removed before deleting the current note.
@@ -278,15 +296,16 @@ export function App() {
         };
         const ordered = [...inputs].sort((a, b) => deletionRank(a) - deletionRank(b));
         for (const input of ordered) {
-          result = await sendTemplateCommand({ ...input, requestId: requestId(), expectedSnapshotVersion: snapshot.snapshotVersion } as ApplicationCommand, snapshot, queryRef.current, latest => { refreshSeq.current++; dataRef.current = latest; setData(applyOptimistic(latest)); });
+          result = await sendTemplateCommand({ ...input, requestId: requestId(), expectedSnapshotVersion: version } as ApplicationCommand, snapshot, queryRef.current, latest => { snapshot = latest; refreshSeq.current++; dataRef.current = latest; setData(applyOptimistic(latest)); });
           succeeded++;
-          if ('noteId' in input) setSelectedIds(previous => { const next = new Set(previous); next.delete(('occurrenceId' in input && input.occurrenceId) || input.noteId!); return next; });
-          snapshot = await querySnapshot(queryRef.current);
-          dataRef.current = snapshot;
+          version = result.snapshotVersion;
+          if (resnapshot) { snapshot = await querySnapshot(queryRef.current); version = snapshot.snapshotVersion; }
         }
         return result;
       } catch (e) { setError(t('menu.batchFailed', { count: succeeded, total: inputs.length }) + ' ' + message((e as Error).message, (e as { code?: string }).code)); }
       finally {
+        // Selection and rows settle together once; per-item updates re-rendered the whole list each time.
+        for (const input of optimistic) optimisticFields.current.delete(input.noteId);
         setSelectedIds(previous => previous.size ? new Set() : previous); await refresh(); setBusy(false);
         for (const key of keys) pendingCommands.current.delete(key);
         setPendingIds(new Set(pendingCommands.current));
@@ -354,10 +373,25 @@ export function App() {
     setErrorCode(undefined); setError('');
     setMenu({ task, tasks: targets, x: event.clientX || bounds.left, y: event.clientY || bounds.bottom });
   });
-  const toggleSelection = useTaskEvent((item: PreviewItem) => {
+  const toggleSelection = useTaskEvent((item: PreviewItem, event?: React.MouseEvent<HTMLElement>) => {
     if (!item.noteId || pendingIds.has(item.noteId)) return;
     const id = item.occurrenceId || item.noteId;
-    setSelectedIds(previous => { const next = new Set(previous); next.has(id) ? next.delete(id) : next.add(id); return next; });
+    if (event?.shiftKey) {
+      // Read rendered rows so ranges follow sorting, notebook nesting, and calendar
+      // layout, without selecting collapsed groups or hidden month overflow.
+      const surface = event.currentTarget.closest('.view-surface');
+      const ids = Array.from(surface?.querySelectorAll<HTMLElement>('[data-selection-id]') ?? [])
+        .filter(row => !row.closest('details:not([open])'))
+        .map(row => row.dataset.selectionId!)
+        .filter(key => { const task = selectableTasks.get(key); return task && !pendingIds.has(task.noteId); });
+      const start = ids.indexOf(selectionAnchor.current ?? ''), end = ids.indexOf(id);
+      const range = start < 0 || end < 0 ? [id] : ids.slice(Math.min(start, end), Math.max(start, end) + 1);
+      if (start < 0) selectionAnchor.current = id;
+      setSelectedIds(new Set(range));
+    } else {
+      selectionAnchor.current = id;
+      setSelectedIds(previous => { const next = new Set(previous); next.has(id) ? next.delete(id) : next.add(id); return next; });
+    }
   });
   const completeItem = useTaskEvent((item: PreviewItem) => void run({ action: item.completed ? 'reopen' : 'complete', noteId: item.noteId, seriesId: item.seriesId, occurrenceId: item.occurrenceId }));
   const itemList = useCallback((items: PreviewItem[], compact = false, hideDate = false) => <TaskList onOpenNotebook={!isCalendar ? openNotebook : undefined} selectedIds={selectedIds} onToggleSelection={toggleSelection} hideDate={hideDate} items={items} folders={data?.folders} tags={data?.tags} compact={compact} busy={false} pendingIds={pendingIds} onSelect={openItem} onMenu={openMenu} onComplete={completeItem} />, [isCalendar, openNotebook, selectedIds, pendingIds, data?.folders, data?.tags, toggleSelection, openItem, openMenu, completeItem]);

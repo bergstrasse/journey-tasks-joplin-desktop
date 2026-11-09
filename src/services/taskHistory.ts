@@ -124,9 +124,14 @@ export function taskHistory(operations: JournalOperation[], note?: NativeNote): 
   // Unmanaged/legacy tasks can still expose their native completion timestamp.
   if (note?.todo_completed && note.todo_completed > 1 && !entries.some(entry => ['completed', 'skipped'].includes(entry.kind) && entry.at === note.todo_completed))
     entries.push({ id: `completed:${note.id}`, at: note.todo_completed, kind: 'completed', changes: [] });
+  // Conversion imports the single task's last resolution into its first occurrence.
+  // Prefer that occurrence entry over the earlier unscoped copy of the same event.
+  const occurrenceResolutions = new Set(entries.filter(entry => entry.occurrenceId && ['completed', 'skipped'].includes(entry.kind))
+    .map(entry => JSON.stringify([entry.kind, entry.at])));
   const resolutions = new Set<string>();
   return entries.filter(entry => {
     if (!['completed', 'skipped'].includes(entry.kind)) return true;
+    if (!entry.occurrenceId && occurrenceResolutions.has(JSON.stringify([entry.kind, entry.at]))) return false;
     const key = JSON.stringify([entry.kind, entry.at, entry.occurrenceId]);
     if (resolutions.has(key)) return false;
     resolutions.add(key); return true;

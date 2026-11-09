@@ -1,6 +1,6 @@
 {
   "name": "joplin-plugin-journey-tasks",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Joplin task agenda with recurring and lunar tasks",
   "license": "MIT",
   "keywords": [
@@ -16,6 +16,7 @@
     "verify:package": "node --import tsx --test tests/package-smoke.test.ts",
     "prepack": "npm run build",
     "verify:release": "node scripts/verify-release.mjs",
+    "release:public": "node scripts/sync-public.mjs",
     "prepublishOnly": "npm run build && npm run check && npm run verify:release"
   },
   "dependencies": {

@@ -207,6 +207,9 @@ export class TaskApplication {
     if (!this.initialized || this.disposed) throw new StorageError('NOT_INITIALIZED', '插件未运行。');
     if (!command || typeof command.requestId !== 'string' || !command.requestId || command.requestId.length > 200) throw new StorageError('INVALID_REQUEST', '无效请求编号。');
     return this.serial(async () => {
+      // These branches overwrite fingerprinted state (folders, cleared caches) before they refresh,
+      // so a baseline deferred by the last write must be taken first.
+      if (['refresh', 'previewCleanup', 'executeCleanup'].includes(command.action)) this.settleFingerprint();
       if (command.action === 'previewCleanup' || command.action === 'executeCleanup') {
         try {
           if (command.action === 'previewCleanup') return { requestId: command.requestId, status: 'saved', snapshotVersion: this.version,
@@ -298,7 +301,7 @@ export class TaskApplication {
           const seriesId = output.seriesId || ('seriesId' in command ? command.seriesId : undefined);
           if (seriesId) { const context = this.series.get(seriesId); if (context) ids.add(context.noteId); }
           this.refreshNoteIds = command.action === 'restoreFirstNote' ? undefined : ids.size ? this.relatedNoteIds([...ids]) : undefined;
-          try { await this.refreshInternal(true); }
+          try { await this.refreshInternal(true, true); }
           finally { this.refreshNoteIds = undefined; }
         }
         else if (command.action === 'savePreferences') this.version++;
@@ -441,6 +444,8 @@ export class TaskApplication {
   private refreshNoteIds?: string[];
   private lastChangeCheck?: number;
   private stateFingerprint = '';
+  /** A command refresh left the fingerprint unmeasured; see refreshInternal. */
+  private fingerprintDeferred = false;
   private noteTagIds = new Map<string, string[]>();
 
   private relatedNoteIds(ids: string[]): string[] {
@@ -753,7 +758,11 @@ export class TaskApplication {
     }
   }
 
-  private async refreshInternal(reconcile: boolean): Promise<void> {
+  /** A write always changes state, so command refreshes bump the version without measuring the
+   * whole-state fingerprint (O(all tasks), the largest per-item cost of batches in #91). The next
+   * other refresh first measures the state that command left, keeping no-op refreshes version-stable. */
+  private async refreshInternal(reconcile: boolean, afterWrite = false): Promise<void> {
+    if (!afterWrite) this.settleFingerprint();
     this.dataReady = false;
     if (this.refreshNoteIds) this.refreshNoteIds = this.relatedNoteIds(this.refreshNoteIds);
     let affected = this.refreshNoteIds && new Set(this.refreshNoteIds);
@@ -809,11 +818,25 @@ export class TaskApplication {
       for (const guard of runtimeGuards) { const context = this.series.get(guard.seriesId); if (context) { context.warning = guard.warning; context.snapshot.status = guard.status === 'active' ? 'pausedConflict' : guard.status; } }
     }
     this.dataReady = replayReady;
-    const fingerprint = stableStringify({ native: [...this.native.values()].map(note => Object.fromEntries(Object.entries(note).filter(([key]) => !['body', 'type_'].includes(key)))),
+    if (afterWrite) { this.version++; this.fingerprintDeferred = true; }
+    else {
+      const fingerprint = this.fingerprint();
+      if (fingerprint !== this.stateFingerprint) { this.version++; this.stateFingerprint = fingerprint; }
+    }
+    this.refreshNoteIds = undefined;
+  }
+
+  /** Must run before anything that feeds fingerprint() is overwritten by a non-write refresh. */
+  private settleFingerprint(): void {
+    if (!this.fingerprintDeferred) return;
+    this.stateFingerprint = this.fingerprint();
+    this.fingerprintDeferred = false;
+  }
+
+  private fingerprint(): string {
+    return stableStringify({ native: [...this.native.values()].map(note => Object.fromEntries(Object.entries(note).filter(([key]) => !['body', 'type_'].includes(key)))),
       series: [...this.series.values()], singles: [...this.singles.values()], diagnostics: this.diagnostics,
       folders: this.nativeFolders, tags: this.nativeTags, noteTags: [...this.noteTagIds].sort(([a], [b]) => a.localeCompare(b)), ready: this.dataReady });
-    if (fingerprint !== this.stateFingerprint) { this.version++; this.stateFingerprint = fingerprint; }
-    this.refreshNoteIds = undefined;
   }
 
   private async operation(context: SeriesContext, kind: DomainOperation['kind'],
@@ -1533,16 +1556,16 @@ export class TaskApplication {
     mode: import('../shared/models').TaskMode, requestId: string): Promise<Partial<ActionResult>> {
     if (this.findSeries(noteId)) throw new StorageError('ALREADY_REPEATING', '此笔记已有重复系列。');
     const single = await this.adoptSingle(noteId);
-    if (single.task.schedule.kind === 'none' || single.task.completedAt) throw new StorageError('REPEAT_DATE_REQUIRED', '请先为未完成任务设置计划日期。');
+    if (single.task.schedule.kind === 'none') throw new StorageError('REPEAT_DATE_REQUIRED', '重复任务必须有计划日期。');
     const seriesId = stableHash(['journey-convert-series', noteId]);
     await this.journal.replayPending();
-    return this.initializeRepeat(noteId, seriesId, single.task.schedule, rule, mode, single.task);
+    return this.initializeRepeat(noteId, seriesId, single.task.schedule, rule, mode, single.task, single.task.completedAt);
   }
 
   /** All entry points initialize the same anchored series and first occurrence. */
   private async initializeRepeat(noteId: string, seriesId: string, schedule: DatedSchedule,
     rule: import('../shared/models').RecurrenceRule, mode: import('../shared/models').TaskMode,
-    fields: Pick<Task, 'priority' | 'pinned' | 'reminder'>): Promise<Partial<ActionResult>> {
+    fields: Pick<Task, 'priority' | 'pinned' | 'reminder'>, completedAt = 0): Promise<Partial<ActionResult>> {
     let note = await this.requireNative(noteId);
     this.journal.registerAnchor(seriesId, noteId);
     if (await this.journal.userData.get(noteId, scopeKey(seriesId))) {
@@ -1565,6 +1588,8 @@ export class TaskApplication {
       resolution: 'open', consumed: false, carrierNoteId: noteId, carrierGeneration: 0, mode };
     const context: SeriesContext = { noteId, meta, operations: [], snapshot: reduceSeries([]) };
     await this.operation(context, 'CreateSeries', { definition, first }, identity);
+    // Import the existing resolution rather than completing the task again at conversion time.
+    if (completedAt) await this.operation(context, 'ActOccurrence', { action: 'complete', occurrenceId: first.occurrenceId, at: completedAt });
     const creationHash = stableHash({ title: note.title, body: note.body });
     await this.operation(context, 'BindCarrier', { occurrenceId: first.occurrenceId, noteId, creationHash, generation: 0 });
     await this.journal.writeCarrier(noteId, this.carrierMeta(context, first, creationHash));

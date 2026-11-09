@@ -69,6 +69,7 @@ export function DateTimeInput({ type, ...props }: Omit<React.InputHTMLAttributes
   const [position, setPosition] = useState<{ top: number; left: number }>();
   const [month, setMonth] = useState('');
   const value = String(props.value ?? '');
+  const today = localToday();
   const close = () => { setPosition(undefined); trigger.current?.focus({ preventScroll: true }); };
   const updateValue = (next: string) => {
     // Use the input's native setter/event path so React consumers receive a real input event.
@@ -138,7 +139,7 @@ export function DateTimeInput({ type, ...props }: Omit<React.InputHTMLAttributes
             const cell = new Date(base); cell.setUTCDate(1 - base.getUTCDay() + i);
             const date = cell.toISOString().slice(0, 10);
             const outside = cell.getUTCMonth() !== monthIndex;
-            return <button key={date} type="button" aria-label={date} aria-pressed={value === date} className={outside ? 'outside' : undefined}
+            return <button key={date} type="button" aria-label={date} aria-pressed={value === date} aria-current={date === today ? 'date' : undefined} className={outside ? 'outside' : undefined}
               disabled={cell.getUTCFullYear() < 1 || cell.getUTCFullYear() > 9999 || !!(props.min && date < String(props.min) || props.max && date > String(props.max))} onClick={() => choose(date)}>{cell.getUTCDate()}</button>;
           })}</span>
         <button type="button" disabled={!!(props.min && localToday() < String(props.min) || props.max && localToday() > String(props.max))} onClick={() => choose(localToday())}>{t('view.today')}</button>

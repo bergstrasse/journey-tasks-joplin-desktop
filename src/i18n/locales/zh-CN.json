@@ -221,7 +221,7 @@
   "backend.NOTEBOOK_MISSING": "请选择有效的目标笔记本。",
   "backend.REPEAT_DATE_REQUIRED": "重复任务必须有计划日期。",
   "backend.ALREADY_REPEATING": "此笔记已有重复系列。",
-  "backend.REPEAT_DATE_REQUIRED.detail2": "请先为未完成任务设置计划日期。",
+  "backend.REPEAT_DATE_REQUIRED.detail2": "重复任务必须有计划日期。",
   "backend.SERIES_MISSING.detail2": "系列定义不可用。",
   "backend.TEMPLATE_REQUIRED": "周期归档模式必须先设置系列模板。",
   "backend.TEMPLATE_MISSING.detail2": "下一周期模板尚未同步，已保留本次完成状态。",

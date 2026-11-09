@@ -210,3 +210,57 @@ test('issue 47: filling an initially empty archive template copies it on save on
     assert.equal(host.notes.get(noteId)!.body, templateNote('new template', 'user execution\n'));
   } finally { app.dispose(); restarted?.dispose(); }
 });
+
+for (const mode of ['continuous', 'archive'] as const) for (const basis of ['scheduled', 'completed'] as const) {
+  test(`issue90 completed single converts without losing completion (${mode}, ${basis})`, async () => {
+    const { host, api, app, command, options } = await setup();
+    const completedAt = now - 86400000;
+    const body = '- [x] 已完成记录';
+    host.seedNote({ id: 'completed-single', parent_id: 'book', title: '已完成任务',
+      body: mode === 'archive' ? templateNote(body) : body, todo_completed: completedAt,
+      todo_due: Date.parse('2026-10-22T00:00:00Z') });
+    await command({ action: 'refresh', requestId: 'discover-completed' });
+    const result = await command({ action: 'editTask', requestId: 'convert-completed', noteId: 'completed-single', patch: {
+      schedule: { kind: 'allDay', date: '2026-10-22', zone: 'Asia/Shanghai' },
+      recurrence: { ...daily, basis }, mode,
+    } });
+    assert.equal(result.status, 'saved', `${result.code}: ${result.message}`);
+    const verify = async (application: TaskApplication) => {
+      const snapshot = await application.snapshot({ showCompleted: true });
+      assert.equal(snapshot.series.length, 1);
+      const series = snapshot.series[0]!;
+      const occurrences = Object.values(series.occurrences);
+      assert.equal(occurrences.length, 2);
+      const completed = occurrences.find(row => row.resolution === 'completed')!;
+      assert.equal(completed.resolvedAt, completedAt);
+      assert.equal(completed.scheduled.date, '2026-10-22');
+      assert.equal(completed.consumed, true);
+      const active = occurrences.find(row => row.resolution === 'open')!;
+      assert.equal(active.scheduled.date, basis === 'scheduled' ? '2026-10-23' : '2026-10-25');
+      assert.equal(host.notes.get(active.carrierNoteId)!.todo_completed, 0);
+      const log = snapshot.taskLogs![series.seriesId]!;
+      assert.equal(log.filter(row => row.kind === 'completed').length, 1);
+      assert.equal(log.find(row => row.kind === 'completed')!.at, completedAt);
+      if (mode === 'archive') assert.equal(host.notes.get('completed-single')!.todo_completed, completedAt);
+    };
+    await verify(app);
+    const restarted = new TaskApplication(api, options); await restarted.initialize();
+    await verify(restarted);
+  });
+}
+
+test('issue90 conversion respects count limit and keeps the completed final task', async () => {
+  const { host, app, command } = await setup();
+  const created = await command({ action: 'createTask', requestId: 'single-create', input: {
+    title: '已完成的最后一期', notebookId: 'book', schedule: { kind: 'allDay', date: '2026-10-24', zone: 'Asia/Shanghai' },
+  } });
+  await command({ action: 'complete', requestId: 'single-complete', noteId: created.noteId });
+  const converted = await command({ action: 'editTask', requestId: 'single-convert', noteId: created.noteId,
+    patch: { recurrence: { ...daily, end: { kind: 'count', count: 1 } } } });
+  assert.equal(converted.status, 'saved', converted.message);
+  const series = (await app.snapshot({ showCompleted: true })).series[0]!;
+  assert.equal(series.status, 'ended');
+  assert.equal(Object.keys(series.occurrences).length, 1);
+  assert.equal(Object.values(series.occurrences)[0]!.resolvedAt, now);
+  assert.equal(host.notes.get(created.noteId)!.todo_completed, now);
+});

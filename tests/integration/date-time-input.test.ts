@@ -6,7 +6,8 @@ import { DateTimeInput } from '../../src/panel/DateTimeInput';
 import { TranslationProvider } from '../../src/i18n/react';
 
 for (const type of ['date', 'time'] as const) {
-  test(`${type} uses a localized stable picker and preserves input changes`, async () => {
+  test(`${type} uses a localized stable picker and preserves input changes`, async context => {
+    context.mock.timers.enable({ apis: ['Date'], now: new Date(2026, 9, 29, 12).getTime() });
     const globals = { document: globalThis.document, window: globalThis.window, HTMLInputElement: globalThis.HTMLInputElement };
     const listeners = new Map<string, Function>();
     const handlers = new Map<string, Set<Function>>();
@@ -48,6 +49,18 @@ for (const type of ['date', 'time'] as const) {
       await act(async () => listeners.get('pointerdown')!({ target: 'inside' }));
       assert.equal(trigger().props['aria-expanded'], true);
       if (type === 'date') {
+        const today = () => renderer!.root.findByProps({ 'aria-label': '2026-10-29' });
+        assert.equal(today().props['aria-current'], 'date');
+        assert.equal(today().props['aria-pressed'], true, 'today can also retain the selected border');
+        await act(async () => renderer!.update(render(false, '')));
+        assert.equal(today().props['aria-current'], 'date', 'an undated task still marks today');
+        assert.equal(renderer!.root.findAllByProps({ 'aria-pressed': true }).length, 0);
+        await act(async () => renderer!.update(render(false, '2026-10-30')));
+        assert.equal(today().props['aria-current'], 'date');
+        const selected = renderer!.root.findByProps({ 'aria-label': '2026-10-30' });
+        assert.equal(selected.props['aria-pressed'], true);
+        assert.equal(selected.props['aria-current'], undefined, 'selected date and today remain distinct');
+        await act(async () => renderer!.update(render()));
         const yearButton = () => renderer!.root.findAllByType('button').find(node => node.props['aria-label'] === 'Year')!;
         assert.equal(renderer!.root.findAllByProps({ 'aria-label': 'Previous year' }).length, 0);
         assert.equal(renderer!.root.findAllByProps({ 'aria-label': 'Next year' }).length, 0);

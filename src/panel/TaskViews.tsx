@@ -14,7 +14,7 @@ const today = () => timezoneAdapter.localDate(Date.now(), Intl.DateTimeFormat().
 export interface TaskListProps {
   items: PreviewItem[]; busy: boolean; onSelect: (item: PreviewItem, event?: MenuEvent) => void; onComplete: (item: PreviewItem) => void;
   onOpenNotebook?: (notebookId: string) => void;
-  pendingIds?: ReadonlySet<string>; selectedIds?: ReadonlySet<string>; onToggleSelection?: (item: PreviewItem) => void; folders?: Named[]; tags?: Named[]; onMenu?: (item: PreviewItem, event: MenuEvent) => void; compact?: boolean; hideDate?: boolean;
+  pendingIds?: ReadonlySet<string>; selectedIds?: ReadonlySet<string>; onToggleSelection?: (item: PreviewItem, event?: MenuEvent) => void; folders?: Named[]; tags?: Named[]; onMenu?: (item: PreviewItem, event: MenuEvent) => void; compact?: boolean; hideDate?: boolean;
 }
 export function TaskList({ items, busy, onSelect, onComplete, folders = [], tags = [], onMenu, compact = false, hideDate = false, pendingIds, selectedIds, onToggleSelection, onOpenNotebook }: TaskListProps) {
   const { locale } = useTranslation();
@@ -50,12 +50,17 @@ const TaskRow = memo(function TaskRow({ item, busy, onSelect, onComplete, onMenu
   const leadingRepeat = compact || hideDate;
   const repeatMark = <span className="repeat-mark" role="img" aria-label={t('calendar.repeat')} title={t('calendar.repeat')}><Icon name="repeat" size={16} /></span>;
   return <article
+    onMouseDownCapture={e => {
+      // Native Shift selection starts on mousedown, before our click handler.
+      if (item.kind === 'actual' && onToggleSelection && e.shiftKey) e.preventDefault();
+    }}
     onClickCapture={e => {
       const mac = /Mac|iPhone|iPad/.test(navigator.platform);
-      if (item.kind === 'actual' && onToggleSelection && (mac ? e.metaKey : e.ctrlKey)) {
-        e.preventDefault(); e.stopPropagation(); onToggleSelection(item);
+      if (item.kind === 'actual' && onToggleSelection && (e.shiftKey || (mac ? e.metaKey : e.ctrlKey))) {
+        e.preventDefault(); e.stopPropagation(); onToggleSelection(item, e);
       }
     }}
+    data-selection-id={item.kind === 'actual' ? item.occurrenceId || item.noteId : undefined}
     data-selected={item.kind === 'actual' && selected || undefined}
     onContextMenu={e => { if (item.kind === 'actual' && onMenu) { e.preventDefault(); onMenu(item, e); } }}
     className={`task-row ${item.kind === 'projected' ? 'projected' : ''} ${item.overdue ? 'overdue' : ''} ${item.completed ? 'completed' : ''}`}>
