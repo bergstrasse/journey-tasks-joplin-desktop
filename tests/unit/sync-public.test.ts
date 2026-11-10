@@ -33,7 +33,7 @@ function setup() {
   unlinkSync(join(repo, 'stale.test.ts'));
   writeFileSync(join(repo, 'fixed.ts'), 'new');
   git('add', '-A'); git('commit', '-qm', 'delete stale test and add fix');
-  const run = () => spawnSync(process.execPath, [script, '--skip-check'], { cwd: repo, env, encoding: 'utf8' });
+  const run = (...extra: string[]) => spawnSync(process.execPath, [script, '--skip-check', ...extra], { cwd: repo, env, encoding: 'utf8' });
   const remoteGit = (...args: string[]) => execFileSync('git', args, { cwd: remote, encoding: 'utf8' }).trim();
   return { root, repo, git, run, remoteGit, writeVersion };
 }
@@ -44,7 +44,7 @@ test('sync-public mirrors main deletions, keeps public-only files and pushes an 
     const result = run();
     assert.equal(result.status, 0, result.stderr + result.stdout);
     const files = remoteGit('ls-tree', '-r', '--name-only', 'main').split('\n').sort();
-    assert.deepEqual(files, ['.gitignore.public', 'changelog.md', 'fixed.ts', 'package.json', 'src/manifest.json']);
+    assert.deepEqual(files, ['.gitignore', '.gitignore.public', 'changelog.md', 'fixed.ts', 'package.json', 'src/manifest.json']);
     assert.equal(remoteGit('cat-file', '-t', 'v1.2.3'), 'tag');
     assert.equal(remoteGit('rev-parse', 'v1.2.3^{commit}'), remoteGit('rev-parse', 'main'));
     assert.equal(git('rev-parse', 'public'), remoteGit('rev-parse', 'main'));
@@ -66,6 +66,46 @@ test('sync-public refuses uncommitted changes and mismatched versions without pu
     assert.match(run().stderr, /versions differ/);
     assert.equal(remoteGit('rev-parse', 'main'), before);
     assert.equal(spawnSync('git', ['rev-parse', '--verify', '-q', 'refs/tags/v1.2.4'], { cwd: remote(root) }).status, 1);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('sync-public --no-tag pushes the branch without a version bump and leaves the tag alone', () => {
+  const { root, repo, run, git, remoteGit } = setup();
+  try {
+    assert.equal(run().status, 0);
+    const tagged = remoteGit('rev-parse', 'v1.2.3^{commit}');
+    writeFileSync(join(repo, 'later.ts'), 'later');
+    git('add', '.'); git('commit', '-qm', 'later fix');
+    const result = run('--no-tag');
+    assert.equal(result.status, 0, result.stderr + result.stdout);
+    assert.match(result.stdout, /no tag was pushed/);
+    assert.notEqual(remoteGit('rev-parse', 'main'), tagged);
+    assert.equal(remoteGit('rev-parse', 'v1.2.3^{commit}'), tagged);
+    assert.equal(git('rev-parse', 'v1.2.3^{commit}'), tagged);
+    assert.match(remoteGit('log', '-1', '--format=%s', 'main'), /^sync: main [0-9a-f]{7} \(based on v1\.2\.3\)$/);
+    assert.ok(remoteGit('ls-tree', '-r', '--name-only', 'main').split('\n').includes('later.ts'));
+    const again = run('--no-tag');
+    assert.equal(again.status, 0, again.stderr);
+    assert.match(again.stdout, /Nothing to push/);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('sync-public excludes tracked files matching .gitignore.public and publishes it as .gitignore', () => {
+  const { root, repo, run, git, remoteGit } = setup();
+  try {
+    mkdirSync(join(repo, 'documents/sub'), { recursive: true });
+    writeFileSync(join(repo, 'documents/发布脚本说明.md'), 'private');
+    writeFileSync(join(repo, 'documents/sub/图.png'), 'private');
+    writeFileSync(join(repo, '.gitignore'), 'node_modules/\n');
+    git('add', '.'); git('commit', '-qm', 'docs');
+    const result = run();
+    assert.equal(result.status, 0, result.stderr + result.stdout);
+    assert.match(result.stdout, /Excluded 2 tracked file/);
+    const files = remoteGit('-c', 'core.quotePath=false', 'ls-tree', '-r', '--name-only', 'main').split('\n');
+    assert.deepEqual(files.filter(file => file.startsWith('documents/')), []);
+    assert.ok(files.includes('fixed.ts'));
+    assert.equal(remoteGit('show', 'main:.gitignore'), remoteGit('show', 'main:.gitignore.public'));
+    assert.equal(git('show', 'main:.gitignore'), 'node_modules/');
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 

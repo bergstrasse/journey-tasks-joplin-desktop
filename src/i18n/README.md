@@ -1,35 +1,58 @@
-# 界面语言设计
+# Interface localization
 
-本模块实现独立语言文件驱动的界面本地化。设备偏好为 `auto` 或注册表中的语言 ID；当前提供 26 个语言／地区选项，具体清单见 `registry.ts`。自动模式在插件启动时读取 Joplin locale，宿主读取失败时使用美国英语（`en-US`）；识别下划线和连字符形式，按优先列表依次查找注册语言及其语言家族，均不支持时回退美国英语。不轮询宿主语言，修改 Joplin 语言后重启插件即可对齐。
+[简体中文](README.zh-CN.md)
 
-`locales/zh-CN.json` 和 `locales/en.json` 使用相同的平铺语义键。新增语言时复制一个文件、翻译值并在 registry 中增加 ID/nativeName/dictionary；存储验证与选择列表从注册表生成。翻译函数不依赖 React，支持具名参数、中文缺译回退与未知键原样返回。
+The interface uses independent JSON dictionaries. There are currently 26 language/region options; `registry.ts` is the source of truth. The language preference is stored per device and accepts `auto` or a registered locale ID. In automatic mode, the plugin reads the Joplin locale once at startup, using `settings.globalValues` and falling back to the legacy `settings.globalValue` API if that call fails. If the host locale is unavailable or empty, it uses US English (`en-US`). Restart the plugin after changing the Joplin language; the host locale is not polled.
 
-React Provider 仅改变界面文案，不改变标题、正文、笔记本名称、模板、日期计划、时区或重复规则。界面语言切换立即生效；宿主注册的菜单标签在下次启动时更新。
+## Updating an existing translation
 
-错误码可以映射为本地化解释；对旧后端返回的已知完整诊断使用受限静态映射，未知原文保留。该处理只用于错误/诊断通道，不扫描 DOM，不翻译用户内容。语言文件统一携带错误文案，避免翻译表散落组件。
+For German, edit `locales/de.json`. Other languages have their own files under `locales/`. Compare against `locales/en.json` or `locales/zh-CN.json`, which use the same flat semantic keys.
 
-日期仍用 ISO 日期值；星期、月份、农历标签、规则摘要、优先级、确认窗、表单与无障碍说明均通过翻译函数生成。无日期任务不会因切换语言被重新安排。
+- Translate values only; keep keys such as `actions.refresh` unchanged.
+- Preserve named parameters such as `{title}` and `{count}`, including their names. Missing parameters remain visible; inserted values are not translated or expanded again.
+- Preserve literal template markers such as `<!-- template:start -->` and `<!-- template:end -->` wherever present.
+- Keep every key and provide a nonempty value. A missing translation falls back to Simplified Chinese; a key missing from both dictionaries is returned unchanged. These fallbacks do not count as a completed translation.
 
-新增语言以机器翻译为初稿，已检查词条、命名参数和模板标记完整性，尚未逐语言人工校译。运行时全部离线打包，不调用翻译服务。简体／繁体按脚本或地区区分；波斯语使用 RTL 布局。
+Additional languages were initially machine translated. Automated checks verify structure, parameters and template markers, but do not guarantee linguistic quality; human corrections are welcome. All dictionaries are bundled for offline use, with no runtime translation service.
 
-## 新增语言示例
+## Adding a language
 
-1. 复制 `locales/en.json` 为 `locales/xx.json`。保留全部键，只翻译值；例如保留 `actions.refresh` 键并翻译其值。保留每个值中的 `{title}`、`{count}` 等具名参数，不翻译参数名。
-2. 在 `registry.ts` 中导入文件，并添加唯一 ID 和母语名称：
+1. Copy `locales/en.json` to `locales/xx.json` and translate the values using the rules above.
+2. Import and register the dictionary in `registry.ts` with a unique locale ID and a native language name:
 
    ```ts
    import example from './locales/xx.json';
-   // registry 对象中新增：
+
+   // Add inside the registry object:
    xx: { id: 'xx', nativeName: 'Language name', dictionary: example },
    ```
 
-3. 不需要修改任务模型或存储验证。界面选项自动增加，自动模式可将地区变体匹配到相应语言家族。
-4. 运行类型检查与语言测试，检查键与参数一致性，再验证窄屏和确认窗中的译文。缺失键临时显示中文，未知键显示键本身，均不能当作翻译完成。
+3. Language choices and preference validation follow the registry automatically; the task model and storage validation need no changes. Review `resolveLanguage` for regional/script matching and `languageDirection` if adding a right-to-left language. Currently only Persian (`fa`) uses RTL.
+4. Update assertions that explicitly expect 26 locales in `tests/unit/i18n.test.ts` and `tests/package-smoke.test.ts` when changing the locale count. Review the count in both versions of this README as well.
 
-`createTranslator(locale)` 返回纯 `t(key, params?)`；`resolveLanguage(preference, systemLocales)` 支持字符串或优先语言列表。`TranslationProvider` 与 `useTranslation` 在 `react.tsx`，不依赖宿主 React 实例。普通用户内容只作为插值值进入 React 文本节点，不作为语言键查找。
+## Runtime behavior
 
-## 构建体积
+`resolveLanguage(preference, locales)` accepts a locale string or an ordered list. An explicit registered preference wins. Automatic matching normalizes underscores and case, then tries an exact registered ID followed by its language family for each candidate. Chinese script subtags take precedence over region: `Hant` selects Traditional Chinese, while `Hans` selects Simplified Chinese; without a script, `TW`, `HK` and `MO` select Traditional Chinese. Bare Romanian defaults to `ro-RO`. If no candidate matches, resolution falls back to `en-US`. When called without locale hints, the helper uses browser language preferences or the runtime Intl locale.
 
-源词典继续作为唯一翻译来源。构建时面板共享词条键名和重复译文，运行时还原完整词典，26 种语言均可离线即时切换。后台先分析入口依赖图，再仅保留业务源码中以字符串字面量引用的词条（包括命令、通知与默认标题）；后台新增翻译调用需使用完整字面量键，不能动态拼接键名。面板完整词典不会进入后台包。
+`createTranslator(locale)` returns the React-independent function `t(key, params?)`. An unregistered locale selects the `en-US` dictionary. `TranslationProvider` and `useTranslation` live in `react.tsx` and use the bundled React instance. Components without a provider default to Simplified Chinese. Saving a language preference updates the panel immediately; host-registered menu labels update on the next plugin startup.
 
-二维码使用 CSS 相对路径引用独立 PNG，构建自动将资源加入 JPL。构建日志与 `publish/build-metadata.json` 记录各文件字节数；package-smoke 验证资源归档、26 种语言的构建前后词典一致性，并限制 JPL 不超过 1,500,000 字节。
+Language changes affect interface text, not user titles, note bodies, notebook names, templates, schedules, time zones or recurrence rules. User content is passed as interpolation data rather than looked up as translation keys. Undated tasks remain undated. Internal calendar date values use ISO dates; displayed dates also depend on the selected calendar and locale. Time display uses Intl with the locale and the independent 12/24-hour preference.
+
+`translateMessage` localizes known error codes and exact known Chinese/English diagnostic messages. Unknown messages are preserved. Use it only for error/diagnostic channels, never for user content; it does not scan the DOM. Keep error messages in the locale dictionaries rather than scattering translation tables across components.
+
+## Validation and bundle size
+
+Run from the repository root:
+
+```sh
+npm run typecheck
+node --import tsx --test tests/unit/i18n.test.ts tests/unit/translation-usage.test.ts tests/integration/language.test.ts tests/integration/host-language.test.ts tests/integration/panel-language.test.ts
+npm run build
+npm run verify:package
+```
+
+The language tests check dictionary keys, nonempty values, named parameters, template markers, locale resolution, persistence and rendering. Also review translations in the panel, especially narrow layouts, confirmation dialogs and RTL layouts where applicable.
+
+Source JSON files remain the sole translation source. The panel build shares dictionary keys and compresses repeated text, then reconstructs complete dictionaries at runtime, allowing all registered languages to switch offline. The host build first inspects its dependency graph and retains only dictionary keys referenced as complete string literals in host business code, including commands, notices and default titles. Use complete literal keys for new host translation calls; dynamically constructed keys are not retained automatically. The complete panel dictionaries do not enter the host bundle.
+
+The support QR code is a separate PNG referenced by a relative CSS URL and included in the JPL automatically. Build logs and `publish/build-metadata.json` report artifact sizes. Package smoke tests check archive contents, dictionary equivalence before/after bundling for all 26 locales and the host subset, and a maximum JPL size of 1,500,000 bytes. Adding translations may require checking the bundle size budget.
