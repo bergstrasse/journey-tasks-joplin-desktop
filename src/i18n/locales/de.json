@@ -446,7 +446,7 @@
   "picker.hour": "Stunde",
   "picker.minute": "Minute",
   "picker.done": "Fertig",
-  "picker.clear": "Klar",
+  "picker.clear": "Löschen",
   "picker.invalidDate": "Geben Sie ein gültiges Datum innerhalb des zulässigen Bereichs ein ( YYYY-MM-DD ).",
   "picker.invalidTime": "Geben Sie eine gültige Uhrzeit ein ( HH:mm ).",
   "cleanup.removeTitle": "Wird klar",
