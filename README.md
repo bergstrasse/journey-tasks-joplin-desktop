@@ -3,7 +3,7 @@
 <p align="center">Native Joplin to-dos in task lists and calendars.<br />Gregorian and Chinese lunar recurrence, per-cycle archives, and native reminders. Edit task bodies in Joplin's own editor.</p>
 
 <p align="center">
-  <a href="https://github.com/tigerwoo/journey-tasks-joplin-desktop/releases"><img src="https://img.shields.io/badge/version-0.1.1-44cc11?style=flat-square" alt="Version 0.1.1" /></a>
+  <a href="https://github.com/tigerwoo/journey-tasks-joplin-desktop/releases"><img src="https://img.shields.io/github/v/release/tigerwoo/journey-tasks-joplin-desktop?style=flat-square&color=44cc11&label=version" alt="Latest release" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="License: MIT" /></a>
 </p>
 

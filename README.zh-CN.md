@@ -3,7 +3,7 @@
 <p align="center">Journey Tasks 将 Joplin 原生待办集中显示为任务列表和日历，支持公历、农历重复任务、周期归档和原生提醒。<br />任务正文仍在 Joplin 中编辑。</p>
 
 <p align="center">
-  <a href="https://github.com/tigerwoo/journey-tasks-joplin-desktop/releases"><img src="https://img.shields.io/badge/version-0.1.1-44cc11?style=flat-square" alt="Version 0.1.1" /></a>
+  <a href="https://github.com/tigerwoo/journey-tasks-joplin-desktop/releases"><img src="https://img.shields.io/github/v/release/tigerwoo/journey-tasks-joplin-desktop?style=flat-square&color=44cc11&label=version" alt="Latest release" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="License: MIT" /></a>
 </p>
 
