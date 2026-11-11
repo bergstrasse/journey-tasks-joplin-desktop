@@ -1,7 +1,8 @@
 import { build } from 'esbuild';
 import ts from 'typescript';
 import { dictionaries } from './compact-dictionaries.mjs';
-import { mkdir, readFile, writeFile, rm, copyFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, rm, copyFile, stat } from 'node:fs/promises';
+import { create as createTar } from 'tar';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 const root = path.resolve(import.meta.dirname, '..');
@@ -41,32 +42,21 @@ await copyFile('src/panel/host.css', 'dist/host.css');
 await copyFile('src/manifest.json', 'dist/manifest.json');
 const manifest = JSON.parse(await readFile('src/manifest.json', 'utf8'));
 await copyFile('LICENSE', 'dist/LICENSE');
-// JPL uses an ordinary uncompressed portable tar archive (same as Joplin generator).
-function header(name, size) {
-  const h = Buffer.alloc(512);
-  const str = (v, o, n) => h.write(v, o, Math.min(Buffer.byteLength(v), n), 'utf8');
-  const oct = (v, o, n) => str(v.toString(8).padStart(n - 1, '0') + '\0', o, n);
-  str(name, 0, 100); oct(0o644, 100, 8); oct(0, 108, 8); oct(0, 116, 8);
-  oct(size, 124, 12); oct(0, 136, 12); h.fill(32, 148, 156); h[156] = 48;
-  str('ustar\0', 257, 6); str('00', 263, 2);
-  const sum = h.reduce((a, b) => a + b, 0);
-  str(sum.toString(8).padStart(6, '0') + '\0 ', 148, 8);
-  return h;
-}
-const chunks = [];
+// JPL is a plain uncompressed tar built the same way as the official Joplin generator (portable mode).
+// mtime is pinned to npm's fixed date: a zero mtime makes Windows fail extraction with "EINVAL: futime" (#96),
+// and a fixed value keeps the archive bytes and _publish_hash reproducible.
+const JPL_MTIME = new Date('1985-10-26T08:15:00Z');
 const runtimeFiles = ['mini.js', 'mini.css', 'host.css', 'index.js', 'panel.js', 'panel.css', 'manifest.json', 'LICENSE',
   ...Object.keys(css.metafile.outputs).filter(file => file !== 'dist/panel.css').map(file => path.relative('dist', file))];
 const artifactBytes = {};
 for (const name of runtimeFiles) {
-  const data = await readFile('dist/' + name);
-  artifactBytes[name] = data.length;
-  console.log(`  ${name}: ${data.length} bytes`);
-  chunks.push(header(name, data.length), data, Buffer.alloc((512 - data.length % 512) % 512));
+  const size = (await stat('dist/' + name)).size;
+  artifactBytes[name] = size;
+  console.log(`  ${name}: ${size} bytes`);
 }
-chunks.push(Buffer.alloc(1024));
-const archive = Buffer.concat(chunks);
 const dest = `publish/${manifest.id}.jpl`;
-await writeFile(dest, archive);
+await createTar({ file: dest, cwd: 'dist', portable: true, strict: true, mtime: JPL_MTIME }, runtimeFiles);
+const archive = await readFile(dest);
 await writeFile(`publish/${manifest.id}.json`, JSON.stringify({ ...manifest,
   _publish_hash: 'sha256:' + createHash('sha256').update(archive).digest('hex') }, null, 2) + '\n');
 await writeFile('publish/build-metadata.json', JSON.stringify({ format: 1, inputs: Object.keys(host.metafile.inputs),
