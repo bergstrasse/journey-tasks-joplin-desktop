@@ -21,6 +21,10 @@ test('built JPL has valid portable tar headers, exactly the runtime files and ma
     const stored = parseInt(h.subarray(148, 156).toString().replace(/\0.*$/, '').trim(), 8);
     const copy = Buffer.from(h); copy.fill(32, 148, 156);
     assert.equal(copy.reduce((a, b) => a + b, 0), stored);
+    // Windows extraction fails with "EINVAL: futime" on a zero mtime (#96).
+    const mtime = parseInt(h.subarray(136, 148).toString().replace(/\0.*$/, '').trim(), 8);
+    assert.ok(mtime > 0, `${name} has no mtime`);
+    assert.equal(String.fromCharCode(h[156]!), '0', `${name} must be a plain file entry`);
     names.push(name); assert.ok(!name.includes('..'));
     assert.deepEqual(bytes.subarray(offset + 512, offset + 512 + size), readFileSync(`dist/${name}`));
     offset += 512 + Math.ceil(size / 512) * 512;

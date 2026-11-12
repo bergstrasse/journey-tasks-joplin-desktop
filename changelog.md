@@ -2,6 +2,16 @@
 
 <!-- Prepend releases as ## vX.Y.Z. Keep English first, then Chinese, inside each version section. -->
 
+## v0.1.3
+
+### English
+
+- Fix plugin installation failing on Windows with "EINVAL: invalid argument, futime". The package is now built with the standard tar tooling used by the official Joplin generator, with valid file timestamps.
+
+### 中文
+
+- 修复 Windows 上安装插件失败并提示“EINVAL: invalid argument, futime”的问题；插件包改用 Joplin 官方生成器同款 tar 工具打包，并写入有效的文件时间。
+
 ## v0.1.2
 
 ### English
